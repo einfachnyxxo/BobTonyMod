@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "bobtony",
+  "version": "${version}",
+  "name": "BobTony",
+  "description": "BobTony the real cyka hodensohn",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/bobtony/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.onyxx.bobtony.client.BobtonyClient"
+    ]
+  },
+  "mixins": [
+    "bobtony.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
