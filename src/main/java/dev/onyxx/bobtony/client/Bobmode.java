@@ -10,44 +10,93 @@ import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 public class Bobmode {
-    private final KeyBinding toggleFlyKey;
+    private final KeyBinding toggleFlyKey; // Keybinding für den Flugmodus
+    private final KeyBinding toggleModeKey; // Keybinding für Modus-Umschaltung (Doppelsprung/Key)
     private boolean wasPressed = false;
+    private boolean useDoubleSpace = true; // Standard: Doppelsprung
     private long lastUpdateTime = System.currentTimeMillis();
+    private long lastJumpTime = 0; // Zeit des letzten Sprungs
+    private boolean wasJumping = false; // Status der Sprungtaste
+    private long lastModeSwitchTime = 0; // Letzte Modus-Umschaltung
+    private static final long MODE_SWITCH_COOLDOWN = 1000; // Abklingzeit in Millisekunden
 
     public Bobmode() {
-        // Keybinding registrieren
+        // Keybinding für Flugmodus
         toggleFlyKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "BobFly", // Keybinding-Name
+                "BobTony Fly", // Keybinding-Name
                 InputUtil.Type.KEYSYM,  // Art des Inputs
                 GLFW.GLFW_KEY_CAPS_LOCK, // Standardtaste
-                "category.bobmode" // Kategorie
+                "BobTony Mod LOL" // Kategorie
+        ));
+
+        // Keybinding für Modus-Umschaltung
+        toggleModeKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "BobTony Toggle Mode", // Keybinding-Name
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_M, // Standardtaste (M)
+                "BobTony Mod LOL" // Kategorie
         ));
 
         // Client-Tick-Event registrieren
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) return;
 
-            // Prüfen, ob das Keybinding gedrückt wurde
-            boolean isPressed = toggleFlyKey.isPressed();
+            ClientPlayerEntity player = client.player;
 
-            if (isPressed && !wasPressed) {
-                ClientPlayerEntity player = client.player;
-                boolean fly = !player.getAbilities().flying; // Flugmodus toggeln
-                player.getAbilities().flying = fly;
-
-                if (fly) {
-                    player.sendMessage(Text.of("Flugmodus aktiviert"), true);
-                    simulateMovement(player); // Bewegung simulieren
-                } else {
-                    player.sendMessage(Text.of("Flugmodus deaktiviert"), true);
-                }
-
-                // Synchronisiere die Fähigkeiten mit dem Server.
-                player.sendAbilitiesUpdate();
+            // Modus-Umschaltung prüfen
+            long currentTime = System.currentTimeMillis();
+            if (toggleModeKey.isPressed() && currentTime - lastModeSwitchTime > MODE_SWITCH_COOLDOWN) {
+                useDoubleSpace = !useDoubleSpace;
+                lastModeSwitchTime = currentTime; // Zeitpunkt der letzten Umschaltung aktualisieren
+                player.sendMessage(Text.of("Flugmodus: " + (useDoubleSpace ? "Doppelsprung" : "Keybinding")), true);
             }
 
-            wasPressed = isPressed;
+            // Doppelsprung-Logik
+            if (useDoubleSpace) {
+                handleDoubleSpaceMode(player);
+            } else {
+                handleKeyBindingMode(player);
+            }
         });
+    }
+
+    private void handleDoubleSpaceMode(ClientPlayerEntity player) {
+        boolean isJumping = player.input.jumping; // Prüfen, ob die Sprungtaste gedrückt wird
+
+        if (isJumping && !wasJumping) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastJumpTime < 300) { // Doppelsprung erkannt
+                toggleFlyMode(player);
+            }
+            lastJumpTime = currentTime;
+        }
+
+        wasJumping = isJumping;
+    }
+
+    private void handleKeyBindingMode(ClientPlayerEntity player) {
+        boolean isPressed = toggleFlyKey.isPressed();
+
+        if (isPressed && !wasPressed) {
+            toggleFlyMode(player);
+        }
+
+        wasPressed = isPressed;
+    }
+
+    private void toggleFlyMode(ClientPlayerEntity player) {
+        boolean fly = !player.getAbilities().flying; // Flugmodus toggeln
+        player.getAbilities().flying = fly;
+
+        if (fly) {
+            player.sendMessage(Text.of("Flugmodus aktiviert"), true);
+            simulateMovement(player); // Bewegung simulieren
+        } else {
+            player.sendMessage(Text.of("Flugmodus deaktiviert"), true);
+        }
+
+        // Synchronisiere die Fähigkeiten mit dem Server
+        player.sendAbilitiesUpdate();
     }
 
     private void simulateMovement(ClientPlayerEntity player) {
