@@ -17,7 +17,7 @@ public class Bobmode {
     public Bobmode() {
         // Keybinding registrieren
         toggleFlyKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.bobmode.togglefly", // Keybinding-Name
+                "BobFly", // Keybinding-Name
                 InputUtil.Type.KEYSYM,  // Art des Inputs
                 GLFW.GLFW_KEY_CAPS_LOCK, // Standardtaste
                 "category.bobmode" // Kategorie
