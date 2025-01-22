@@ -42,7 +42,7 @@ public class Bobmode {
                     player.sendMessage(Text.of("Flugmodus deaktiviert"), true);
                 }
 
-                // Synchronisiere die Fähigkeiten mit dem Server
+                // Synchronisiere die Fähigkeiten mit dem Server.
                 player.sendAbilitiesUpdate();
             }
 
