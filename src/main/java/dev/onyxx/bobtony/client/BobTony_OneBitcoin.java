@@ -9,7 +9,7 @@ import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
-public class Bobmode {
+public class BobTony_OneBitcoin {
     private final KeyBinding toggleFlyKey; // Keybinding für den Flugmodus
     private final KeyBinding toggleModeKey; // Keybinding für Modus-Umschaltung (Doppelsprung/Key)
     private boolean wasPressed = false;
@@ -20,7 +20,7 @@ public class Bobmode {
     private long lastModeSwitchTime = 0; // Letzte Modus-Umschaltung
     private static final long MODE_SWITCH_COOLDOWN = 1000; // Abklingzeit in Millisekunden
 
-    public Bobmode() {
+    public BobTony_OneBitcoin() {
         // Keybinding für Flugmodus
         toggleFlyKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "BobTony Fly", // Keybinding-Name
