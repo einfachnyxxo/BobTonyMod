@@ -22,5 +22,5 @@ public class BobtonyClient implements ClientModInitializer {
 }
 
 
-// ich hasse java...
+// ich liebe java...
 // rust an die macht!!!!!!!!
