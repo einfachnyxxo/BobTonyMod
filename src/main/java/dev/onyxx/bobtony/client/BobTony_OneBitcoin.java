@@ -88,7 +88,6 @@ public class BobTony_OneBitcoin {
                 flyspeed -= 0.1f;
                 if (flyspeed <= 0.1) {
                     flyspeed = 0.1f;
-                    player.sendMessage(Text.of("flyspeed can't go under 1!"),true);
                 }
                 player.sendMessage(Text.of("flyspeed updated to: " + String.format("%.1f", flyspeed)),true);
                 player.getAbilities().setFlySpeed(flyspeed);
