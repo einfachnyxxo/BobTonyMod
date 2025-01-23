@@ -73,6 +73,9 @@ public class BobTony_OneBitcoin {
             boolean isFlySpeedPlusPressed = flyspeedplus.isPressed();
             if (isFlySpeedPlusPressed && !wasFlySpeedPlusPressed) {
                 flyspeed += 0.1f;
+                if (flyspeed > 1f) {
+                    flyspeed = 1f;
+                }
                 player.sendMessage(Text.of("flyspeed updated to: " + String.format("%.1f", flyspeed)),true);
                 player.getAbilities().setFlySpeed(flyspeed);
                 player.sendAbilitiesUpdate();
@@ -83,16 +86,17 @@ public class BobTony_OneBitcoin {
             boolean isFlySpeedMinusPressed = flyspeedminus.isPressed();
             if (isFlySpeedMinusPressed && !wasFlySpeedMinusPressed) {
                 flyspeed -= 0.1f;
+                if (flyspeed <= 0.1) {
+                    flyspeed = 0.1f;
+                    player.sendMessage(Text.of("flyspeed can't go under 1!"),true);
+                }
                 player.sendMessage(Text.of("flyspeed updated to: " + String.format("%.1f", flyspeed)),true);
                 player.getAbilities().setFlySpeed(flyspeed);
                 player.sendAbilitiesUpdate();
                 System.out.println(flyspeed);
             }
             wasFlySpeedMinusPressed = isFlySpeedMinusPressed;
-            if (flyspeed <= 0) {
-                flyspeed = 0.1f;
-                player.sendMessage(Text.of("flyspeed can't go under 0!"),true);
-            }
+
 
             // Doppelsprung-Logik
             if (useDoubleSpace) {
