@@ -9,7 +9,7 @@ public class BobtonyClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         instance = MinecraftClient.getInstance();
-        new Bobmode();
+        new BobTony_OneBitcoin();
     }
 
     public static MinecraftClient getInstance() {
