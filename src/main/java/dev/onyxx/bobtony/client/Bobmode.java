@@ -12,13 +12,18 @@ import org.lwjgl.glfw.GLFW;
 public class Bobmode {
     private final KeyBinding toggleFlyKey; // Keybinding für den Flugmodus
     private final KeyBinding toggleModeKey; // Keybinding für Modus-Umschaltung (Doppelsprung/Key)
-    private boolean wasPressed = false;
+    private final KeyBinding flyspeedminus;
+    private final KeyBinding flyspeedplus;
+    private boolean wasToggleFlyKeyPressed = false;
     private boolean useDoubleSpace = true; // Standard: Doppelsprung
     private long lastUpdateTime = System.currentTimeMillis();
     private long lastJumpTime = 0; // Zeit des letzten Sprungs
     private boolean wasJumping = false; // Status der Sprungtaste
     private long lastModeSwitchTime = 0; // Letzte Modus-Umschaltung
     private static final long MODE_SWITCH_COOLDOWN = 1000; // Abklingzeit in Millisekunden
+    public float flyspeed = 0.2f;
+    private boolean wasFlySpeedPlusPressed = false;
+    private boolean wasFlySpeedMinusPressed = false;
 
     public Bobmode() {
         // Keybinding für Flugmodus
@@ -26,6 +31,20 @@ public class Bobmode {
                 "BobTony Fly", // Keybinding-Name
                 InputUtil.Type.KEYSYM,  // Art des Inputs
                 GLFW.GLFW_KEY_CAPS_LOCK, // Standardtaste
+                "BobTony Mod LOL" // Kategorie
+        ));
+
+        flyspeedplus = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "flyspeed+", // Keybinding-Name
+                InputUtil.Type.KEYSYM,  // Art des Inputs
+                GLFW.GLFW_KEY_I, // Standardtaste
+                "BobTony Mod LOL" // Kategorie
+        ));
+
+        flyspeedminus = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "flyspeed-", // Keybinding-Name
+                InputUtil.Type.KEYSYM,  // Art des Inputs
+                GLFW.GLFW_KEY_U, // Standardtaste
                 "BobTony Mod LOL" // Kategorie
         ));
 
@@ -49,6 +68,30 @@ public class Bobmode {
                 useDoubleSpace = !useDoubleSpace;
                 lastModeSwitchTime = currentTime; // Zeitpunkt der letzten Umschaltung aktualisieren
                 player.sendMessage(Text.of("Flugmodus: " + (useDoubleSpace ? "Doppelsprung" : "Keybinding")), true);
+            }
+
+            boolean isFlySpeedPlusPressed = flyspeedplus.isPressed();
+            if (isFlySpeedPlusPressed && !wasFlySpeedPlusPressed) {
+                flyspeed += 0.1f;
+                player.sendMessage(Text.of("flyspeed updated to: " + String.format("%.1f", flyspeed)),true);
+                player.getAbilities().setFlySpeed(flyspeed);
+                player.sendAbilitiesUpdate();
+                System.out.println(flyspeed);
+            }
+            wasFlySpeedPlusPressed = isFlySpeedPlusPressed;
+
+            boolean isFlySpeedMinusPressed = flyspeedminus.isPressed();
+            if (isFlySpeedMinusPressed && !wasFlySpeedMinusPressed) {
+                flyspeed -= 0.1f;
+                player.sendMessage(Text.of("flyspeed updated to: " + String.format("%.1f", flyspeed)),true);
+                player.getAbilities().setFlySpeed(flyspeed);
+                player.sendAbilitiesUpdate();
+                System.out.println(flyspeed);
+            }
+            wasFlySpeedMinusPressed = isFlySpeedMinusPressed;
+            if (flyspeed <= 0) {
+                flyspeed = 0.1f;
+                player.sendMessage(Text.of("flyspeed can't go under 0!"),true);
             }
 
             // Doppelsprung-Logik
@@ -75,18 +118,31 @@ public class Bobmode {
     }
 
     private void handleKeyBindingMode(ClientPlayerEntity player) {
-        boolean isPressed = toggleFlyKey.isPressed();
+        boolean isToggleFlyKeyPressed = toggleFlyKey.isPressed();
 
-        if (isPressed && !wasPressed) {
+        if (isToggleFlyKeyPressed && !wasToggleFlyKeyPressed) {
             toggleFlyMode(player);
+            System.out.print("toggo");
         }
 
-        wasPressed = isPressed;
+        wasToggleFlyKeyPressed = isToggleFlyKeyPressed;
+
+
+
     }
+
+
 
     private void toggleFlyMode(ClientPlayerEntity player) {
         boolean fly = !player.getAbilities().flying; // Flugmodus toggeln
         player.getAbilities().flying = fly;
+
+        player.getAbilities().setFlySpeed(flyspeed);
+        System.out.print(flyspeed);
+
+
+
+
 
         if (fly) {
             player.sendMessage(Text.of("Flugmodus aktiviert"), true);
