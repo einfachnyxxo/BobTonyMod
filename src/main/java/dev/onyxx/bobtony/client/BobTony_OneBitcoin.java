@@ -24,7 +24,7 @@ public class BobTony_OneBitcoin {
     private boolean wasJumping = false; // Tracks if the jump key was previously pressed
     private long lastModeSwitchTime = 0; // Last mode switch timestamp
     private static final long MODE_SWITCH_COOLDOWN = 1000; // Cooldown time for mode switching in ms
-    private float flyspeed = 0.2f; // Default flight speed
+    private float flyspeed = 0.1f; // Default flight speed
     private boolean wasFlySpeedPlusPressed = false; // Tracks if the increase flyspeed key was pressed
     private boolean wasFlySpeedMinusPressed = false; // Tracks if the decrease flyspeed key was pressed
 
