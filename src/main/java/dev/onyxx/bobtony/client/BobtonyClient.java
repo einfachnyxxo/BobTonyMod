@@ -15,12 +15,7 @@ public class BobtonyClient implements ClientModInitializer {
     public static MinecraftClient getInstance() {
         return instance;
     }
-
-
-
-
 }
 
-
-// ich liebe java...
+// manche hassen Java manche lieben Java...
 // rust an die macht!!!!!!!!

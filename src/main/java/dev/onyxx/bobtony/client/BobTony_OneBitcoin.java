@@ -10,94 +10,67 @@ import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 public class BobTony_OneBitcoin {
-    private final KeyBinding toggleFlyKey; // Keybinding für den Flugmodus
-    private final KeyBinding toggleModeKey; // Keybinding für Modus-Umschaltung (Doppelsprung/Key)
-    private final KeyBinding flyspeedminus;
-    private final KeyBinding flyspeedplus;
-    private boolean wasToggleFlyKeyPressed = false;
-    private boolean useDoubleSpace = true; // Standard: Doppelsprung
-    private long lastUpdateTime = System.currentTimeMillis();
-    private long lastJumpTime = 0; // Zeit des letzten Sprungs
-    private boolean wasJumping = false; // Status der Sprungtaste
-    private long lastModeSwitchTime = 0; // Letzte Modus-Umschaltung
-    private static final long MODE_SWITCH_COOLDOWN = 1000; // Abklingzeit in Millisekunden
-    public float flyspeed = 0.2f;
-    private boolean wasFlySpeedPlusPressed = false;
-    private boolean wasFlySpeedMinusPressed = false;
+    // Keybindings
+    private final KeyBinding toggleFlyKey; // Keybinding to toggle flight mode
+    private final KeyBinding toggleModeKey; // Keybinding to switch modes (double jump or key)
+    private final KeyBinding flyspeedMinusKey; // Keybinding to decrease flight speed
+    private final KeyBinding flyspeedPlusKey; // Keybinding to increase flight speed
+
+    // State variables
+    private boolean wasToggleFlyKeyPressed = false; // Tracks if the toggle fly key was pressed
+    private boolean useDoubleSpace = true; // Default mode: double jump
+    private long lastUpdateTime = System.currentTimeMillis(); // Last time movement was simulated
+    private long lastJumpTime = 0; // Timestamp of the last jump
+    private boolean wasJumping = false; // Tracks if the jump key was previously pressed
+    private long lastModeSwitchTime = 0; // Last mode switch timestamp
+    private static final long MODE_SWITCH_COOLDOWN = 1000; // Cooldown time for mode switching in ms
+    private float flyspeed = 0.2f; // Default flight speed
+    private boolean wasFlySpeedPlusPressed = false; // Tracks if the increase flyspeed key was pressed
+    private boolean wasFlySpeedMinusPressed = false; // Tracks if the decrease flyspeed key was pressed
 
     public BobTony_OneBitcoin() {
-        // Keybinding für Flugmodus
+        // Initialize keybindings
         toggleFlyKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "BobTony Fly", // Keybinding-Name
-                InputUtil.Type.KEYSYM,  // Art des Inputs
-                GLFW.GLFW_KEY_CAPS_LOCK, // Standardtaste
-                "BobTony Mod LOL" // Kategorie
+                "BobTony Fly", // Keybinding name
+                InputUtil.Type.KEYSYM,  // Input type
+                GLFW.GLFW_KEY_CAPS_LOCK, // Default key
+                "BobTony Mod LOL" // Category
         ));
 
-        flyspeedplus = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "flyspeed+", // Keybinding-Name
-                InputUtil.Type.KEYSYM,  // Art des Inputs
-                GLFW.GLFW_KEY_I, // Standardtaste
-                "BobTony Mod LOL" // Kategorie
-        ));
-
-        flyspeedminus = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "flyspeed-", // Keybinding-Name
-                InputUtil.Type.KEYSYM,  // Art des Inputs
-                GLFW.GLFW_KEY_U, // Standardtaste
-                "BobTony Mod LOL" // Kategorie
-        ));
-
-        // Keybinding für Modus-Umschaltung
-        toggleModeKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "BobTony Toggle Mode", // Keybinding-Name
+        flyspeedPlusKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "flyspeed+", // Keybinding name
                 InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_M, // Standardtaste (M)
-                "BobTony Mod LOL" // Kategorie
+                GLFW.GLFW_KEY_I, // Default key
+                "BobTony Mod LOL" // Category
         ));
 
-        // Client-Tick-Event registrieren
+        flyspeedMinusKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "flyspeed-", // Keybinding name
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_U, // Default key
+                "BobTony Mod LOL" // Category
+        ));
+
+        toggleModeKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "BobTony Toggle Mode", // Keybinding name
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_M, // Default key (M)
+                "BobTony Mod LOL" // Category
+        ));
+
+        // Register client tick event handler
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) return;
 
             ClientPlayerEntity player = client.player;
 
-            // Modus-Umschaltung prüfen
-            long currentTime = System.currentTimeMillis();
-            if (toggleModeKey.isPressed() && currentTime - lastModeSwitchTime > MODE_SWITCH_COOLDOWN) {
-                useDoubleSpace = !useDoubleSpace;
-                lastModeSwitchTime = currentTime; // Zeitpunkt der letzten Umschaltung aktualisieren
-                player.sendMessage(Text.of("Flugmodus: " + (useDoubleSpace ? "Doppelsprung" : "Keybinding")), true);
-            }
+            // Handle mode switching
+            handleModeSwitch(player);
 
-            boolean isFlySpeedPlusPressed = flyspeedplus.isPressed();
-            if (isFlySpeedPlusPressed && !wasFlySpeedPlusPressed) {
-                flyspeed += 0.1f;
-                if (flyspeed > 1f) {
-                    flyspeed = 1f;
-                }
-                player.sendMessage(Text.of("flyspeed updated to: " + String.format("%.1f", flyspeed)),true);
-                player.getAbilities().setFlySpeed(flyspeed);
-                player.sendAbilitiesUpdate();
-                System.out.println(flyspeed);
-            }
-            wasFlySpeedPlusPressed = isFlySpeedPlusPressed;
+            // Handle flight speed adjustments
+            handleFlySpeedAdjustments(player);
 
-            boolean isFlySpeedMinusPressed = flyspeedminus.isPressed();
-            if (isFlySpeedMinusPressed && !wasFlySpeedMinusPressed) {
-                flyspeed -= 0.1f;
-                if (flyspeed <= 0.1) {
-                    flyspeed = 0.1f;
-                }
-                player.sendMessage(Text.of("flyspeed updated to: " + String.format("%.1f", flyspeed)),true);
-                player.getAbilities().setFlySpeed(flyspeed);
-                player.sendAbilitiesUpdate();
-                System.out.println(flyspeed);
-            }
-            wasFlySpeedMinusPressed = isFlySpeedMinusPressed;
-
-
-            // Doppelsprung-Logik
+            // Handle flight mode based on the current mode
             if (useDoubleSpace) {
                 handleDoubleSpaceMode(player);
             } else {
@@ -106,12 +79,47 @@ public class BobTony_OneBitcoin {
         });
     }
 
+    // Handles switching between double jump and keybinding modes
+    private void handleModeSwitch(ClientPlayerEntity player) {
+        long currentTime = System.currentTimeMillis();
+        if (toggleModeKey.isPressed() && currentTime - lastModeSwitchTime > MODE_SWITCH_COOLDOWN) {
+            useDoubleSpace = !useDoubleSpace; // Toggle mode
+            lastModeSwitchTime = currentTime; // Update mode switch timestamp
+            player.sendMessage(Text.of("Flugmodus: " + (useDoubleSpace ? "Doppelsprung" : "Keybinding")), true);
+        }
+    }
+
+    // Handles adjustments to the flight speed
+    private void handleFlySpeedAdjustments(ClientPlayerEntity player) {
+        boolean isFlySpeedPlusPressed = flyspeedPlusKey.isPressed();
+        if (isFlySpeedPlusPressed && !wasFlySpeedPlusPressed) {
+            adjustFlySpeed(player, 0.1f); // Increase speed
+        }
+        wasFlySpeedPlusPressed = isFlySpeedPlusPressed;
+
+        boolean isFlySpeedMinusPressed = flyspeedMinusKey.isPressed();
+        if (isFlySpeedMinusPressed && !wasFlySpeedMinusPressed) {
+            adjustFlySpeed(player, -0.1f); // Decrease speed
+        }
+        wasFlySpeedMinusPressed = isFlySpeedMinusPressed;
+    }
+
+    // Adjusts the flight speed by the specified amount
+    private void adjustFlySpeed(ClientPlayerEntity player, float amount) {
+        flyspeed += amount;
+        flyspeed = Math.max(0.1f, Math.min(1.0f, flyspeed)); // Clamp speed between 0.1 and 1.0
+        player.sendMessage(Text.of("flyspeed updated to: " + String.format("%.1f", flyspeed)), true);
+        player.getAbilities().setFlySpeed(flyspeed);
+        player.sendAbilitiesUpdate();
+    }
+
+    // Handles flight activation using the double space mode
     private void handleDoubleSpaceMode(ClientPlayerEntity player) {
-        boolean isJumping = player.input.jumping; // Prüfen, ob die Sprungtaste gedrückt wird
+        boolean isJumping = player.input.jumping; // Check if jump key is pressed
 
         if (isJumping && !wasJumping) {
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastJumpTime < 300) { // Doppelsprung erkannt
+            if (currentTime - lastJumpTime < 300) { // Double jump detected
                 toggleFlyMode(player);
             }
             lastJumpTime = currentTime;
@@ -120,52 +128,40 @@ public class BobTony_OneBitcoin {
         wasJumping = isJumping;
     }
 
+    // Handles flight activation using the toggle fly key
     private void handleKeyBindingMode(ClientPlayerEntity player) {
         boolean isToggleFlyKeyPressed = toggleFlyKey.isPressed();
 
         if (isToggleFlyKeyPressed && !wasToggleFlyKeyPressed) {
             toggleFlyMode(player);
-            System.out.print("toggo");
         }
 
         wasToggleFlyKeyPressed = isToggleFlyKeyPressed;
-
-
-
     }
 
-
-
+    // Toggles the flight mode for the player
     private void toggleFlyMode(ClientPlayerEntity player) {
-        boolean fly = !player.getAbilities().flying; // Flugmodus toggeln
-        player.getAbilities().flying = fly;
+        boolean isFlying = !player.getAbilities().flying; // Toggle flight state
+        player.getAbilities().flying = isFlying;
+        player.getAbilities().setFlySpeed(flyspeed); // Set current flyspeed
 
-        player.getAbilities().setFlySpeed(flyspeed);
-        System.out.print(flyspeed);
-
-
-
-
-
-        if (fly) {
+        if (isFlying) {
             player.sendMessage(Text.of("Flugmodus aktiviert"), true);
-            simulateMovement(player); // Bewegung simulieren
+            simulateMovement(player); // Simulate slight movement to prevent kicks
         } else {
             player.sendMessage(Text.of("Flugmodus deaktiviert"), true);
         }
 
-        // Synchronisiere die Fähigkeiten mit dem Server
-        player.sendAbilitiesUpdate();
+        player.sendAbilitiesUpdate(); // Sync abilities with the server
     }
 
+    // Simulates slight movements to prevent being kicked for inactivity while flying
     private void simulateMovement(ClientPlayerEntity player) {
-        // Simuliere leichte Bewegungen, um Kicks zu vermeiden
         new Thread(() -> {
             try {
                 while (player.getAbilities().flying) {
                     long currentTime = System.currentTimeMillis();
                     if (currentTime - lastUpdateTime > 50) {
-                        // Leichte Bewegung simulieren
                         player.networkHandler.sendPacket(
                                 new PlayerMoveC2SPacket.PositionAndOnGround(
                                         player.getX(), player.getY() + 0.05, player.getZ(), true
@@ -178,7 +174,7 @@ public class BobTony_OneBitcoin {
                         );
                         lastUpdateTime = currentTime;
                     }
-                    Thread.sleep(50); // 20 Ticks pro Sekunde simulieren
+                    Thread.sleep(50); // Simulate 20 ticks per second
                 }
             } catch (InterruptedException ignored) {
             }
