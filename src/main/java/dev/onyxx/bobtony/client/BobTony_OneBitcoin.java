@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
@@ -163,16 +162,17 @@ public class BobTony_OneBitcoin {
     private void simulateMovement(ClientPlayerEntity player) {
         new Thread(() -> {
             try {
-                boolean wasSneaking = player.input.sneaking; // Track sneaking state
-
+                boolean wasSneaking = player.input.sneaking; // Sneak-Status initialisieren
+                boolean wasTouchingCeiling = false; // Status für Deckenberührung
                 while (player.getAbilities().flying) {
                     boolean isSneaking = player.input.sneaking;
+                    boolean isTouchingCeiling = isTouchingCeiling(player);
 
-                    // Simulate movement only if the player is not sneaking
-                    if (!isSneaking) {
+                    // Bewegung simulieren, wenn nicht sneakt und keine Decke berührt wird
+                    if (!isSneaking && !isTouchingCeiling) {
                         long currentTime = System.currentTimeMillis();
                         if (currentTime - lastUpdateTime > 50) {
-                            // Simulate slight movement to prevent kicks
+                            // Simuliere leichte Bewegungen
                             player.networkHandler.sendPacket(
                                     new PlayerMoveC2SPacket.PositionAndOnGround(
                                             player.getX(), player.getY() + 0.05, player.getZ(), true
@@ -187,18 +187,29 @@ public class BobTony_OneBitcoin {
                         }
                     }
 
-                    // Update sneaking state for the next iteration
+                    // Aktualisiere den vorherigen Zustand
                     wasSneaking = isSneaking;
+                    wasTouchingCeiling = isTouchingCeiling;
 
-                    Thread.sleep(50); // Simulate 20 ticks per second
+                    Thread.sleep(50); // 20 Ticks pro Sekunde simulieren
                 }
             } catch (InterruptedException ignored) {
             }
         }).start();
     }
 
-
-
+    private boolean isTouchingCeiling(ClientPlayerEntity player) {
+        // Überprüfe die Blöcke direkt über dem Spieler
+        double playerHeadY = player.getBoundingBox().maxY; // Kopfposition des Spielers
+        return !player.getWorld().isAir(player.getBlockPos().up()) || // Block direkt über dem Kopf
+                !player.getWorld().isAir(player.getBlockPos().up(2)); // Block zwei Blöcke darüber
+    }
 
 
 }
+
+
+
+
+
+
