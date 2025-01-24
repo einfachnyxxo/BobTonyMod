@@ -3,6 +3,7 @@ package dev.onyxx.bobtony.client;
 import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.MinecraftClient;
 
+
 public class BobtonyClient implements ClientModInitializer {
     private static MinecraftClient instance;
 

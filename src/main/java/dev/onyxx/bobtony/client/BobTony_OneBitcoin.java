@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
@@ -147,7 +148,7 @@ public class BobTony_OneBitcoin {
 
         if (isFlying) {
             player.sendMessage(Text.of("Flugmodus aktiviert"), true);
-            simulateMovement(player); // Simulate slight movement to prevent kicks
+            simulateMovement(player); // Start or manage movement simulation
         } else {
             player.sendMessage(Text.of("Flugmodus deaktiviert"), true);
         }
@@ -155,29 +156,49 @@ public class BobTony_OneBitcoin {
         player.sendAbilitiesUpdate(); // Sync abilities with the server
     }
 
+
+
+
     // Simulates slight movements to prevent being kicked for inactivity while flying
     private void simulateMovement(ClientPlayerEntity player) {
         new Thread(() -> {
             try {
+                boolean wasSneaking = player.input.sneaking; // Track sneaking state
+
                 while (player.getAbilities().flying) {
-                    long currentTime = System.currentTimeMillis();
-                    if (currentTime - lastUpdateTime > 50) {
-                        player.networkHandler.sendPacket(
-                                new PlayerMoveC2SPacket.PositionAndOnGround(
-                                        player.getX(), player.getY() + 0.05, player.getZ(), true
-                                )
-                        );
-                        player.networkHandler.sendPacket(
-                                new PlayerMoveC2SPacket.PositionAndOnGround(
-                                        player.getX(), player.getY(), player.getZ(), true
-                                )
-                        );
-                        lastUpdateTime = currentTime;
+                    boolean isSneaking = player.input.sneaking;
+
+                    // Simulate movement only if the player is not sneaking
+                    if (!isSneaking) {
+                        long currentTime = System.currentTimeMillis();
+                        if (currentTime - lastUpdateTime > 50) {
+                            // Simulate slight movement to prevent kicks
+                            player.networkHandler.sendPacket(
+                                    new PlayerMoveC2SPacket.PositionAndOnGround(
+                                            player.getX(), player.getY() + 0.05, player.getZ(), true
+                                    )
+                            );
+                            player.networkHandler.sendPacket(
+                                    new PlayerMoveC2SPacket.PositionAndOnGround(
+                                            player.getX(), player.getY(), player.getZ(), true
+                                    )
+                            );
+                            lastUpdateTime = currentTime;
+                        }
                     }
+
+                    // Update sneaking state for the next iteration
+                    wasSneaking = isSneaking;
+
                     Thread.sleep(50); // Simulate 20 ticks per second
                 }
             } catch (InterruptedException ignored) {
             }
         }).start();
     }
+
+
+
+
+
 }
