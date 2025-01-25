@@ -107,7 +107,7 @@ public class BobTony_OneBitcoin {
     // Adjusts the flight speed by the specified amount
     private void adjustFlySpeed(ClientPlayerEntity player, float amount) {
         flyspeed += amount;
-        flyspeed = Math.max(0.1f, Math.min(1.0f, flyspeed)); // Clamp speed between 0.1 and 1.0
+        flyspeed = Math.max(0.1f, flyspeed); // Clamp speed between 0.1 and 1.0
         player.sendMessage(Text.of("flyspeed updated to: " + String.format("%.1f", flyspeed)), true);
         player.getAbilities().setFlySpeed(flyspeed);
         player.sendAbilitiesUpdate();
@@ -207,7 +207,6 @@ public class BobTony_OneBitcoin {
 
 
 }
-
 
 
 
