@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
@@ -18,6 +19,7 @@ public class BobTony_OneBitcoin {
     // State variables
     private boolean wasToggleFlyKeyPressed = false; // Tracks if the toggle fly key was pressed
     private boolean useDoubleSpace = true; // Default mode: double jump
+    private long lastUpdateTime = System.currentTimeMillis(); // Last time movement was simulated
     private long lastJumpTime = 0; // Timestamp of the last jump
     private boolean wasJumping = false; // Tracks if the jump key was previously pressed
     private long lastModeSwitchTime = 0; // Last mode switch timestamp
@@ -105,7 +107,7 @@ public class BobTony_OneBitcoin {
     // Adjusts the flight speed by the specified amount
     private void adjustFlySpeed(ClientPlayerEntity player, float amount) {
         flyspeed += amount;
-        flyspeed = Math.max(0.1f, flyspeed); // Clamp speed between 0.1 and 1.0
+        flyspeed = Math.max(0.1f, Math.min(1.0f, flyspeed)); // Clamp speed between 0.1 and 1.0
         player.sendMessage(Text.of("flyspeed updated to: " + String.format("%.1f", flyspeed)), true);
         player.getAbilities().setFlySpeed(flyspeed);
         player.sendAbilitiesUpdate();
@@ -161,11 +163,31 @@ public class BobTony_OneBitcoin {
         new Thread(() -> {
             try {
                 boolean wasSneaking = player.input.sneaking; // Sneak-Status initialisieren
+                boolean wasTouchingCeiling = false; // Status für Deckenberührung
                 while (player.getAbilities().flying) {
+                    boolean isSneaking = player.input.sneaking;
 
+                    // Bewegung simulieren, wenn nicht sneakt und keine Decke berührt wird
+                    if (!isSneaking) {
+                        long currentTime = System.currentTimeMillis();
+                        if (currentTime - lastUpdateTime > 50) {
+                            // Simuliere leichte Bewegungen
+                            player.networkHandler.sendPacket(
+                                    new PlayerMoveC2SPacket.PositionAndOnGround(
+                                            player.getX(), player.getY() + 0.05, player.getZ(), true
+                                    )
+                            );
+                            player.networkHandler.sendPacket(
+                                    new PlayerMoveC2SPacket.PositionAndOnGround(
+                                            player.getX(), player.getY(), player.getZ(), true
+                                    )
+                            );
+                            lastUpdateTime = currentTime;
+                        }
+                    }
 
                     // Aktualisiere den vorherigen Zustand
-                    wasSneaking = player.input.sneaking;
+                    wasSneaking = isSneaking;
 
                     Thread.sleep(50); // 20 Ticks pro Sekunde simulieren
                 }
