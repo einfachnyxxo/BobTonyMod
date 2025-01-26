@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
@@ -19,7 +18,6 @@ public class BobTony_OneBitcoin {
     // State variables
     private boolean wasToggleFlyKeyPressed = false; // Tracks if the toggle fly key was pressed
     private boolean useDoubleSpace = true; // Default mode: double jump
-    private long lastUpdateTime = System.currentTimeMillis(); // Last time movement was simulated
     private long lastJumpTime = 0; // Timestamp of the last jump
     private boolean wasJumping = false; // Tracks if the jump key was previously pressed
     private long lastModeSwitchTime = 0; // Last mode switch timestamp
@@ -163,33 +161,11 @@ public class BobTony_OneBitcoin {
         new Thread(() -> {
             try {
                 boolean wasSneaking = player.input.sneaking; // Sneak-Status initialisieren
-                boolean wasTouchingCeiling = false; // Status für Deckenberührung
                 while (player.getAbilities().flying) {
-                    boolean isSneaking = player.input.sneaking;
-                    boolean isTouchingCeiling = isTouchingCeiling(player);
 
-                    // Bewegung simulieren, wenn nicht sneakt und keine Decke berührt wird
-                    if (!isSneaking && !isTouchingCeiling) {
-                        long currentTime = System.currentTimeMillis();
-                        if (currentTime - lastUpdateTime > 50) {
-                            // Simuliere leichte Bewegungen
-                            player.networkHandler.sendPacket(
-                                    new PlayerMoveC2SPacket.PositionAndOnGround(
-                                            player.getX(), player.getY() + 0.05, player.getZ(), true
-                                    )
-                            );
-                            player.networkHandler.sendPacket(
-                                    new PlayerMoveC2SPacket.PositionAndOnGround(
-                                            player.getX(), player.getY(), player.getZ(), true
-                                    )
-                            );
-                            lastUpdateTime = currentTime;
-                        }
-                    }
 
                     // Aktualisiere den vorherigen Zustand
-                    wasSneaking = isSneaking;
-                    wasTouchingCeiling = isTouchingCeiling;
+                    wasSneaking = player.input.sneaking;
 
                     Thread.sleep(50); // 20 Ticks pro Sekunde simulieren
                 }
@@ -198,12 +174,6 @@ public class BobTony_OneBitcoin {
         }).start();
     }
 
-    private boolean isTouchingCeiling(ClientPlayerEntity player) {
-        // Überprüfe die Blöcke direkt über dem Spieler
-        double playerHeadY = player.getBoundingBox().maxY; // Kopfposition des Spielers
-        return !player.getWorld().isAir(player.getBlockPos().up()) || // Block direkt über dem Kopf
-                !player.getWorld().isAir(player.getBlockPos().up(2)); // Block zwei Blöcke darüber
-    }
 
 
 }
