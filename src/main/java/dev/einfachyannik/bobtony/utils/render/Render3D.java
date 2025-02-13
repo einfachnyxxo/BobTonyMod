@@ -240,8 +240,7 @@ public class Render3D {
         };
 	}
 
-	private static void buildLine3d(MatrixStack matrices, BufferBuilder bufferBuilder, float x1, float y1, float z1,
-			float x2, float y2, float z2, Color color) {
+	private static void buildLine3d(MatrixStack matrices, BufferBuilder bufferBuilder, float x1, float y1, float z1, float x2, float y2, float z2, Color color) {
 		MatrixStack.Entry entry = matrices.peek();
 		Matrix4f matrix4f = entry.getPositionMatrix();
 
