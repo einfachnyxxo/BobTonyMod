@@ -7,10 +7,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.minecraft.block.AnvilBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
+import net.minecraft.block.*;
 import net.minecraft.block.entity.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
@@ -187,8 +184,39 @@ public class BobTony_OneBitcoin {
                         Color blockColor = new Color(0, 0, 255, 1.0F);
                         Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
                         Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                    }else if (blockEntity instanceof FurnaceBlockEntity){
+                        Color blockColor = new Color(255, 0, 0, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                    }else if (blockEntity instanceof ShulkerBoxBlockEntity){
+                        Color blockColor = new Color(150, 0, 255, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                    }else if (blockEntity instanceof BeaconBlockEntity){
+                        Color blockColor = new Color(0, 255, 255, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                    }else if (blockEntity instanceof DropperBlockEntity){
+                        Color blockColor = new Color(255, 255, 0, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                    }else if (blockEntity instanceof EndPortalBlockEntity){
+                        Color blockColor = new Color(255, 100, 0, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                    } else if (blockEntity instanceof DispenserBlockEntity) {
+                        Color blockColor = new Color(255, 255, 255, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                    } else if (blockEntity instanceof EnderChestBlockEntity){
+                        Color blockColor = new Color(255, 0, 255, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
                     }
+
                 });
+
+
             }
 
         });
