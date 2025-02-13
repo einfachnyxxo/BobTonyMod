@@ -18,5 +18,5 @@ public class BobtonyClient implements ClientModInitializer {
     }
 }
 
-// manche hassen Java manche lieben Java...
+// manche hassen Java manche lieben Java... (aber ich mag Kotlin)
 // rust an die macht!!!!!!!!
