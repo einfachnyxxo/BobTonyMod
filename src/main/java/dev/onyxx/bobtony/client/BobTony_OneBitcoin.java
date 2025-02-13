@@ -189,7 +189,7 @@ public class BobTony_OneBitcoin {
                         Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
                         Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
                     }else if (blockEntity instanceof ShulkerBoxBlockEntity){
-                        Color blockColor = new Color(150, 0, 255, 1.0F);
+                        Color blockColor = new Color(255, 100, 0, 1.0F);
                         Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
                         Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
                     }else if (blockEntity instanceof BeaconBlockEntity){
@@ -198,10 +198,6 @@ public class BobTony_OneBitcoin {
                         Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
                     }else if (blockEntity instanceof DropperBlockEntity){
                         Color blockColor = new Color(255, 255, 0, 1.0F);
-                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
-                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
-                    }else if (blockEntity instanceof EndPortalBlockEntity){
-                        Color blockColor = new Color(255, 100, 0, 1.0F);
                         Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
                         Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
                     } else if (blockEntity instanceof DispenserBlockEntity) {
