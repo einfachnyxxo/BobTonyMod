@@ -472,7 +472,6 @@ public class BobTony_OneBitcoin {
                 player.sendMessage(Text.of(PREFIX +"Boost: §cOff"), false);
             } else if (mode == Modes.BOOST) {
                 mode = Modes.FLY;
-                player.getAbilities().flying = true;
                 modules.add("Fly");
                 modules.remove("Boost");
                 player.sendMessage(Text.of(PREFIX +"Fly: §aOn"), false);
