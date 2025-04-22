@@ -1,4 +1,4 @@
-package dev.einfachyannik.bobtony.utils;
+package dev.einfachyannik.bobtony.utils.gui;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joml.Vector3f;

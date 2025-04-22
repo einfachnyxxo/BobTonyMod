@@ -17,7 +17,6 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
@@ -31,7 +30,6 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.WorldChunk;
-import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.awt.*;
@@ -47,13 +45,9 @@ import static dev.einfachyannik.bobtony.utils.render.Render3D.getEntityPositionO
 public class BobTony_OneBitcoin {
     // Keybindings
     private final KeyBinding toggleModeKey; // Keybinding to switch modes (double jump or key)
-    private boolean toggleModeKeyWasPressed = false;
 
     // FINAL VARIABLES
     public static final String PREFIX = "§8[§6BobTony§8] §r";
-
-    //List of all activated Modules
-    public static List<String> modules = new ArrayList<>();
 
     //State variables
     private List<String> trackerList = new ArrayList();
@@ -69,17 +63,14 @@ public class BobTony_OneBitcoin {
     private Modes mode = Modes.NONE; //Mode
     private List<Block> trackerBlockList = new ArrayList();
     private static boolean chestesp = false;
-    private static boolean playeresp = false;
     private static boolean fly = false;
-    private static boolean glide = false;
-    private boolean say;
 
     public BobTony_OneBitcoin() {
         toggleModeKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.bobtony.switch_modes", // Keybinding translation Key
+                "Switch modes", // Keybinding name
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_M, // Default key (M)
-                "BobTony" // Category
+                "BobTony Mod LOL" // Category
         ));
 
         // Register client tick event handler
@@ -94,11 +85,7 @@ public class BobTony_OneBitcoin {
             // Handle doubleJump
             handleDoubleJump(player);
 
-            if (glide && !player.isGliding()) {
-                player.startGliding();
-            }
-
-            // NoFall
+            // nofall
             if (nofall && client.player != null && !client.player.getAbilities().flying) {
                 client.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
                         client.player.getX(),
@@ -115,39 +102,33 @@ public class BobTony_OneBitcoin {
         });
 
         ClientSendMessageEvents.ALLOW_CHAT.register(message -> {
-            if (!message.startsWith(".") || say) {
-                say = false;
-                return true;
-            }
-            if (message.equals(".help")) {
-                showHelpMessage();
-            } else if (message.startsWith(".strength ") || message.equals(".strength")) {
+            if (message.startsWith(".strength ")){
                 handleStrengthCommand(message);
-            } else if (message.equals(".nofall")) {
+                return false;
+            }else if (message.equals(".nofall")) {
                 handelNoFallCommand();
-            } else if (message.startsWith(".flyspeed ") || message.equals(".flyspeed")) {
+                return false; //Cancel die Message für den Server halt (ich geh crashout, fick dich IntelliJ)
+            } else if (message.startsWith(".flyspeed ")) {
                 handelFlySpeedCommand(message);
+                return false;
             } else if (message.equals(".nukeserver")) {
                 handleNukeCommand();
-            } else if (message.startsWith(".speed ") || message.equals(".speed")) {
+                return false;
+            } else if (message.startsWith(".speed ")) {
                 handleSpeedCommand(message);
-            } else if (message.startsWith(".tracker ") || message.equals(".tracker")) {
+                return false;
+            } else if (message.startsWith(".tracker ")) {
                 handleTracker(message);
+                return false;
             } else if (message.equals(".chestesp")) {
                 handleChestESP();
-            } else if (message.equals(".playeresp")) {
-                handlePlayerESP();
+                return false;
             } else if (message.equals(".fly")){
                 handleFly();
-            } else if (message.equals(".glide")) {
-                handleGlide();
-            } else if (message.startsWith(".say ") || message.equals(".say")) {
-                handleSay(message);
-            } else {
-                MinecraftClient client = MinecraftClient.getInstance();
-                client.player.sendMessage(Text.literal(PREFIX + "Unknown command \"" + message + "\". Type .help for help"), false);
+                return false;
             }
-            return false;
+
+            return true; //Maybe ein forceMessage also das mutes nichts mehr bringen
         });
 
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
@@ -164,7 +145,7 @@ public class BobTony_OneBitcoin {
                 if (trackerList != null) {
                     for (String name : trackerList) {
                         if (Objects.equals(entity.getName(), Text.literal(name))) {
-                            drawLineToEntity(matrices, client.player, entity, tickDelta, color, 2.0f);
+                            Render3D.drawLineToEntity(matrices, client.player, entity, tickDelta, color, 2.0f);
                             if (entity != client.player) {
                                 double interpolatedX = entity.prevX + (entity.getX() - entity.prevX) * tickDelta;
                                 double interpolatedY = entity.prevY + (entity.getY() - entity.prevY) * tickDelta;
@@ -185,33 +166,9 @@ public class BobTony_OneBitcoin {
                 }
             }
 
-            if (playeresp) {
-                Color playerColor = new Color(255, 100, 0, 1.0F);;
-                for (PlayerEntity player : client.world.getPlayers()) {
-                    drawLineToEntity(matrices, client.player, player, tickDelta, playerColor, 2.0f);
-                    if (player == client.player) {
-                        continue;
-                    }
-                    double interpolatedX = player.prevX + (player.getX() - player.prevX) * tickDelta;
-                    double interpolatedY = player.prevY + (player.getY() - player.prevY) * tickDelta;
-                    double interpolatedZ = player.prevZ + (player.getZ() - player.prevZ) * tickDelta;
-
-                    Box box = player.getBoundingBox().offset(
-                            interpolatedX - player.getX() - cameraPos.x,
-                            interpolatedY - player.getY() - cameraPos.y,
-                            interpolatedZ - player.getZ() - cameraPos.z
-                    );
-
-                    Render3D.draw3DHitBox(matrices, box, playerColor, 2.0F);
-                }
-            }
-
             if (chestesp){
-                getTileEntities().forEach(blockEntity -> {
-                    Color blockColor = getColor(blockEntity);
-                    if (blockColor == null) {
-                        return;
-                    }
+                getTileEntities().forEach(blockEntity ->
+                {
                     Box box = new Box(
                             blockEntity.getPos().getX() - cameraPos.x,
                             blockEntity.getPos().getY() - cameraPos.y,
@@ -220,9 +177,48 @@ public class BobTony_OneBitcoin {
                             blockEntity.getPos().getY() + 1 - cameraPos.y,
                             blockEntity.getPos().getZ() + 1 - cameraPos.z
                     );
-                    Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
-                    Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
-                    RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                    if (blockEntity instanceof ChestBlockEntity || blockEntity instanceof TrappedChestBlockEntity) {
+                        Color blockColor = new Color(0, 255, 0, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                    }else if (blockEntity instanceof BarrelBlockEntity){
+                        Color blockColor = new Color(0, 0, 255, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                    }else if (blockEntity instanceof FurnaceBlockEntity){
+                        Color blockColor = new Color(255, 0, 0, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                    }else if (blockEntity instanceof ShulkerBoxBlockEntity){
+                        Color blockColor = new Color(255, 100, 0, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                    }else if (blockEntity instanceof BeaconBlockEntity){
+                        Color blockColor = new Color(0, 255, 255, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                    }else if (blockEntity instanceof DropperBlockEntity){
+                        Color blockColor = new Color(255, 255, 0, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                    } else if (blockEntity instanceof DispenserBlockEntity) {
+                        Color blockColor = new Color(255, 255, 255, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                    } else if (blockEntity instanceof EnderChestBlockEntity){
+                        Color blockColor = new Color(255, 0, 255, 1.0F);
+                        Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
+                        Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
+                        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                    }
+
                 });
 
 
@@ -232,95 +228,14 @@ public class BobTony_OneBitcoin {
 
     }
 
-    private static @Nullable Color getColor(BlockEntity blockEntity) {
-        Color blockColor = null;
-
-        if (blockEntity instanceof ChestBlockEntity || blockEntity instanceof TrappedChestBlockEntity) {
-            blockColor = new Color(0, 255, 0, 1.0F);
-        } else if (blockEntity instanceof BarrelBlockEntity){
-            blockColor = new Color(0, 0, 255, 1.0F);
-        } else if (blockEntity instanceof FurnaceBlockEntity){
-            blockColor = new Color(255, 0, 0, 1.0F);
-        } else if (blockEntity instanceof ShulkerBoxBlockEntity){
-            blockColor = new Color(255, 100, 0, 1.0F);
-        } else if (blockEntity instanceof BeaconBlockEntity){
-            blockColor = new Color(0, 255, 255, 1.0F);
-        } else if (blockEntity instanceof DropperBlockEntity){
-            blockColor = new Color(255, 255, 0, 1.0F);
-        } else if (blockEntity instanceof DispenserBlockEntity) {
-            blockColor = new Color(255, 255, 255, 1.0F);
-        } else if (blockEntity instanceof EnderChestBlockEntity){
-            blockColor = new Color(255, 0, 255, 1.0F);
-        }
-        return blockColor;
-    }
-
-    private void handlePlayerESP() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        playeresp = !playeresp;
-        if (playeresp){
-            modules.add("PlayerESP");
-            client.player.sendMessage(Text.literal(PREFIX + "PlayerESP: §aOn"), false);
-        } else {
-            modules.remove("PlayerESP");
-            client.player.sendMessage(Text.literal(PREFIX + "PlayerESP: §cOff"), false);
-        }
-    }
-
-    private void handleSay(String message) {
-        MinecraftClient client = MinecraftClient.getInstance();
-
-        String[] parts = message.split(" ");
-        if (parts.length != 1) {
-            parts[0] = "";
-            say = true;
-            client.player.networkHandler.sendChatMessage(String.join(" ", parts).trim());
-        } else {
-            client.player.sendMessage(Text.literal(PREFIX + "§cUsage: .say <message>"), false);
-        }
-    }
-
-    private void handleGlide() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        glide = !glide;
-        if (glide) {
-            client.player.startGliding();
-            modules.add("Glide");
-            client.player.sendMessage(Text.literal(PREFIX + "Glide: §aOn"), false);
-        } else {
-            client.player.stopGliding();
-            modules.remove("Glide");
-            client.player.sendMessage(Text.literal(PREFIX + "Glide: §cOff"), false);
-        }
-    }
-
-    private void showHelpMessage() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        client.player.sendMessage(Text.literal(PREFIX + "------------------------BobTony Commands------------------------"), false);
-        client.player.sendMessage(Text.literal(PREFIX + ".help    Shows this help"), false);
-        client.player.sendMessage(Text.literal(PREFIX + ".strength <value>    Change the Boost Strength"), false);
-        client.player.sendMessage(Text.literal(PREFIX + ".nofall    Get no fall damage"), false);
-        client.player.sendMessage(Text.literal(PREFIX + ".flyspeed <value>    Change your FlySpeed"), false);
-        client.player.sendMessage(Text.literal(PREFIX + ".nukeserver    (Doesn't work)"), false);
-        client.player.sendMessage(Text.literal(PREFIX + ".speed <value>    (Doesn't work)"), false);
-        client.player.sendMessage(Text.literal(PREFIX + ".tracker (add|remove) <name>    Track given entities"), false);
-        client.player.sendMessage(Text.literal(PREFIX + ".chestesp    Highlight Chests and other containers"), false);
-        client.player.sendMessage(Text.literal(PREFIX + ".playeresp    Highlight Players"), false);
-        client.player.sendMessage(Text.literal(PREFIX + ".fly    Start Flying"), false);
-        client.player.sendMessage(Text.literal(PREFIX + ".glide    (Client-Side)"), false);
-    }
-
     private void handleFly(){
         MinecraftClient client = MinecraftClient.getInstance();
 
         if (mode != Modes.FLY){
             mode = Modes.FLY;
-            modules.add("Fly");
             client.player.sendMessage(Text.literal(PREFIX + "Fly: §aOn"), false);
-        } else {
+        }else {
             mode = Modes.NONE;
-            modules.remove("Fly");
-            client.player.getAbilities().flying = false;
             client.player.sendMessage(Text.literal(PREFIX + "Fly: §cOff"), false);
         }
     }
@@ -329,10 +244,8 @@ public class BobTony_OneBitcoin {
         MinecraftClient client = MinecraftClient.getInstance();
         chestesp = !chestesp;
         if (chestesp){
-            modules.add("ChestESP");
             client.player.sendMessage(Text.literal(PREFIX + "ChestESP: §aOn"), false);
-        } else {
-            modules.remove("ChestESP");
+        }else {
             client.player.sendMessage(Text.literal(PREFIX + "ChestESP: §cOff"), false);
         }
     }
@@ -418,11 +331,9 @@ public class BobTony_OneBitcoin {
     private void handelNoFallCommand(){
         MinecraftClient client = MinecraftClient.getInstance();
         nofall = !nofall;
-        if (nofall) {
-            modules.add("NoFall");
+        if (nofall){
             client.player.sendMessage(Text.literal(PREFIX + "NoFall: §aOn"), false);
-        } else {
-            modules.remove("NoFall");
+        }else {
             client.player.sendMessage(Text.literal(PREFIX + "NoFall: §cOff"), false);
         }
     }
@@ -439,7 +350,7 @@ public class BobTony_OneBitcoin {
                 client.player.sendMessage(Text.literal(PREFIX + "§cKeine richtige Zahl!"), false);
             }
         } else {
-            client.player.sendMessage(Text.literal(PREFIX + "§cUsage: .flyspeed <value>"), false);
+            client.player.sendMessage(Text.literal(PREFIX + "§cUsage: .strength <value>"), false);
         }
     }
 
@@ -459,31 +370,19 @@ public class BobTony_OneBitcoin {
 
     // Handles switching between double jump and keybinding modes
     private void handleModeSwitch(ClientPlayerEntity player) {
-        if (toggleModeKey.isPressed()) {
-            if (toggleModeKeyWasPressed) {
-                return;
-            }
-            toggleModeKeyWasPressed = true;
+        long currentTime = System.currentTimeMillis();
+        if (toggleModeKey.isPressed() && currentTime - lastModeSwitchTime > MODE_SWITCH_COOLDOWN) {
             if (mode == Modes.FLY){
-                mode = Modes.NONE;
-                player.getAbilities().flying = false;
-                modules.remove("Fly");
-                player.sendMessage(Text.of(PREFIX +"Fly: §cOff"), false);
-                player.sendMessage(Text.of(PREFIX +"Boost: §cOff"), false);
-            } else if (mode == Modes.BOOST) {
-                mode = Modes.FLY;
-                modules.add("Fly");
-                modules.remove("Boost");
-                player.sendMessage(Text.of(PREFIX +"Fly: §aOn"), false);
-                player.sendMessage(Text.of(PREFIX +"Boost: §cOff"), false);
-            } else if (mode == Modes.NONE) {
                 mode = Modes.BOOST;
-                modules.add("Boost");
-                player.sendMessage(Text.of(PREFIX +"Fly: §cOff"), false);
-                player.sendMessage(Text.of(PREFIX +"Boost: §aOn"), false);
+                player.sendMessage(Text.of(PREFIX +" Fly: §cOff"), false);
+                player.sendMessage(Text.of(PREFIX +" Boost: §aOn"), false);
+            }else {
+                mode = Modes.FLY;
+                player.sendMessage(Text.of(PREFIX +" Boost: §cOff"), false);
+                player.sendMessage(Text.of(PREFIX +" Fly: §aOn"), false);
             }
-        } else {
-            toggleModeKeyWasPressed = false;
+
+            lastModeSwitchTime = currentTime; // Update mode switch timestamp
         }
     }
 
@@ -501,9 +400,9 @@ public class BobTony_OneBitcoin {
         if (isJumping && !wasJumping) {
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastJumpTime < 300) { // Double jump detected
-                if (mode == Modes.FLY) {
+                if(mode == Modes.FLY) {
                     toggleFlyMode(player);
-                } else if (mode == Modes.BOOST) {
+                }else {
                     boostPlayer(player);
                 }
             }

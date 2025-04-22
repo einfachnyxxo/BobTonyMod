@@ -2,30 +2,22 @@ package dev.einfachyannik.bobtony.utils.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import dev.einfachyannik.bobtony.utils.Color;
+import dev.einfachyannik.bobtony.utils.gui.Color;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgramKeys;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.BufferRenderer;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.client.render.entity.LivingEntityRenderer;
-import net.minecraft.client.render.entity.model.EntityModel;
-import net.minecraft.client.render.entity.state.LivingEntityRenderState;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 
 public class Render3D {
 	public static void draw3DHitBox(MatrixStack matrices, Box box, Color color, float lineThickness) {
@@ -200,6 +192,21 @@ public class Render3D {
 		Render3D.drawLine3D(matrices, x1, y1, z1, x2, y2, z2, color, lineWidth);
 	}
 
+	public static Vec3d rotateVector(Vec3d vec, double yaw, double pitch) {
+		double cosYaw = Math.cos(Math.toRadians(-yaw));
+		double sinYaw = Math.sin(Math.toRadians(-yaw));
+
+		double rotatedX = cosYaw * vec.x - sinYaw * vec.z;
+		double rotatedZ = sinYaw * vec.x + cosYaw * vec.z;
+
+		double cosPitch = Math.cos(Math.toRadians(-pitch));
+		double sinPitch = Math.sin(Math.toRadians(-pitch));
+
+		double rotatedY = cosPitch * vec.y - sinPitch * rotatedZ;
+		rotatedZ = sinPitch * vec.y + cosPitch * rotatedZ;
+
+		return new Vec3d(rotatedX, rotatedY, rotatedZ);
+	}
 
 	public static void drawLine3D(MatrixStack matrixStack, Vec3d pos1, Vec3d pos2, Color color, float lineWidth) {
 		drawLine3D(matrixStack, (float) pos1.x, (float) pos1.y, (float) pos1.z, (float) pos2.x, (float) pos2.y,
@@ -227,6 +234,44 @@ public class Render3D {
 		RenderSystem.lineWidth(1f);
 		RenderSystem.enableDepthTest();
 		RenderSystem.disableBlend();
+	}
+
+	public static void drawWorldText(WorldRenderContext context, String text, Vec3d entityPos, Color color, float scale) {
+		MinecraftClient client = MinecraftClient.getInstance();
+		MatrixStack matrices = context.matrixStack();
+		Vec3d cameraPos = context.camera().getPos();
+		VertexConsumerProvider.Immediate consumerProvider = (VertexConsumerProvider.Immediate) context.consumers();
+		DrawContext drawContext = new DrawContext(client, consumerProvider);
+
+		// Berechnung der relativen Position zur Kamera
+		double x = entityPos.x - cameraPos.x;
+		double y = entityPos.y - cameraPos.y;
+		double z = entityPos.z - cameraPos.z;
+
+		// Wenn das Entity nicht sichtbar ist, nicht rendern
+		if (z < 0) return;
+
+		matrices.push();
+
+		// Weltposition setzen
+		matrices.translate(x, y, z);
+
+		// Kameraausrichtung für Billboarding
+		Quaternionf rotation = new Quaternionf()
+				.rotateY((float) Math.toRadians(-context.camera().getYaw()))
+				.rotateX((float) Math.toRadians(context.camera().getPitch()));
+
+		matrices.multiply(rotation);
+
+		// Skalierung anpassen
+		float distance = (float) client.player.squaredDistanceTo(entityPos);
+		float textScale = Math.max(0.02F, scale / (distance * 0.1F));
+		matrices.scale(-textScale, -textScale, textScale);
+
+		// Text mittig rendern
+		drawContext.drawText(client.textRenderer, text, -client.textRenderer.getWidth(text) / 2, 0, color.getColorAsInt(), false);
+
+		matrices.pop();
 	}
 
 	private static float getYaw(Direction direction) {
