@@ -1,7 +1,6 @@
 package dev.onyxx.bobtony.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import dev.einfachyannik.bobtony.utils.Color;
 import dev.einfachyannik.bobtony.utils.render.Render3D;
 import dev.einfachyannik.bobtony.enums.Modes;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -139,7 +138,7 @@ public class BobTony_OneBitcoin {
             World world = client.world;
 
             float tickDelta = context.tickCounter().getTickDelta(false);
-            Color color = new Color(255, 0, 0, 1.0F);
+            dev.einfachyannik.bobtony.utils.gui.Color color = new dev.einfachyannik.bobtony.utils.gui.Color(255, 0, 0, 1.0F);
 
             for (Entity entity : client.world.getEntities()) {
                 if (trackerList != null) {
@@ -178,42 +177,42 @@ public class BobTony_OneBitcoin {
                             blockEntity.getPos().getZ() + 1 - cameraPos.z
                     );
                     if (blockEntity instanceof ChestBlockEntity || blockEntity instanceof TrappedChestBlockEntity) {
-                        Color blockColor = new Color(0, 255, 0, 1.0F);
+                        dev.einfachyannik.bobtony.utils.gui.Color blockColor = new dev.einfachyannik.bobtony.utils.gui.Color(0, 255, 0, 1.0F);
                         Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
                         Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
                         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
                     }else if (blockEntity instanceof BarrelBlockEntity){
-                        Color blockColor = new Color(0, 0, 255, 1.0F);
+                        dev.einfachyannik.bobtony.utils.gui.Color blockColor = new dev.einfachyannik.bobtony.utils.gui.Color(0, 0, 255, 1.0F);
                         Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
                         Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
                         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
                     }else if (blockEntity instanceof FurnaceBlockEntity){
-                        Color blockColor = new Color(255, 0, 0, 1.0F);
+                        dev.einfachyannik.bobtony.utils.gui.Color blockColor = new dev.einfachyannik.bobtony.utils.gui.Color(255, 0, 0, 1.0F);
                         Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
                         Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
                         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
                     }else if (blockEntity instanceof ShulkerBoxBlockEntity){
-                        Color blockColor = new Color(255, 100, 0, 1.0F);
+                        dev.einfachyannik.bobtony.utils.gui.Color blockColor = new dev.einfachyannik.bobtony.utils.gui.Color(255, 100, 0, 1.0F);
                         Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
                         Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
                         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
                     }else if (blockEntity instanceof BeaconBlockEntity){
-                        Color blockColor = new Color(0, 255, 255, 1.0F);
+                        dev.einfachyannik.bobtony.utils.gui.Color blockColor = new dev.einfachyannik.bobtony.utils.gui.Color(0, 255, 255, 1.0F);
                         Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
                         Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
                         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
                     }else if (blockEntity instanceof DropperBlockEntity){
-                        Color blockColor = new Color(255, 255, 0, 1.0F);
+                        dev.einfachyannik.bobtony.utils.gui.Color blockColor = new dev.einfachyannik.bobtony.utils.gui.Color(255, 255, 0, 1.0F);
                         Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
                         Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
                         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
                     } else if (blockEntity instanceof DispenserBlockEntity) {
-                        Color blockColor = new Color(255, 255, 255, 1.0F);
+                        dev.einfachyannik.bobtony.utils.gui.Color blockColor = new dev.einfachyannik.bobtony.utils.gui.Color(255, 255, 255, 1.0F);
                         Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
                         Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
                         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
                     } else if (blockEntity instanceof EnderChestBlockEntity){
-                        Color blockColor = new Color(255, 0, 255, 1.0F);
+                        dev.einfachyannik.bobtony.utils.gui.Color blockColor = new dev.einfachyannik.bobtony.utils.gui.Color(255, 0, 255, 1.0F);
                         Render3D.draw3DBox(matrices, box, blockColor, 2.0F);
                         Render3D.drawLineToBlockEntity(matrices, client.player, blockEntity, tickDelta, blockColor, 2.0f);
                         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);

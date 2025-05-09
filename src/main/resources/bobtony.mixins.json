@@ -4,9 +4,14 @@
   "package": "dev.einfachyannik.bobtony.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "ServerPlayNetworkHanderMixin"
   ],
   "client": [
-    "ClientPlayerEntityMixin"
+    "AbstractClientPlayerEntityMixin",
+    "ClientPlayerEntityMixin",
+    "EntityRendererMixin",
+    "GameRendererMixin",
+    "TitleScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1
