@@ -7,7 +7,9 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerWarningScreen;
+import net.minecraft.client.gui.screen.option.OptionsScreen;
 import net.minecraft.client.gui.screen.world.SelectWorldScreen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 import java.util.*;
 
@@ -35,9 +37,24 @@ public abstract class TitleScreenMixin extends Screen {
             Screen screen = (Screen)(this.client.options.skipMultiplayerWarning ? new MultiplayerScreen(this) : new MultiplayerWarningScreen(this));
             this.client.setScreen(screen);
         });
-        
+        RoundedButton options = new RoundedButton(
+                this.width / 2 - 100, l + 48, 100, 20,
+                Text.literal("Options"),
+                new Color(255, 255, 255),
+                () -> this.client.setScreen(new OptionsScreen(this, this.client.options))
+        );
+        RoundedButton quit = new RoundedButton(
+                this.width / 2, l + 48, 100, 20,
+                Text.literal("Quit Game"),
+                new Color(255, 255, 255),
+                () -> this.client.scheduleStop()
+                );
+
+
         this.addDrawableChild(singleplayer);
         this.addDrawableChild(multiplayer);
+        this.addDrawableChild(options);
+        this.addDrawableChild(quit);
 
     }
 
