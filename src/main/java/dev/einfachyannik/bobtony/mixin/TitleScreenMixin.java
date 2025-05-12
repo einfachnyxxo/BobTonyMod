@@ -33,23 +33,29 @@ public abstract class TitleScreenMixin extends Screen {
         RoundedButton singleplayer = new RoundedButton(this.width / 2 - 100, l, 200, 20, Text.literal("Singleplayer"), new Color(255, 255, 255), () -> {
             this.client.setScreen(new SelectWorldScreen(this));
         });
+
         RoundedButton multiplayer = new RoundedButton(this.width / 2 - 100, l + 24, 200, 20, Text.literal("Multiplayer"), new Color(255, 255, 255), () -> {
-            Screen screen = (Screen)(this.client.options.skipMultiplayerWarning ? new MultiplayerScreen(this) : new MultiplayerWarningScreen(this));
+            Screen screen = this.client.options.skipMultiplayerWarning ? new MultiplayerScreen(this) : new MultiplayerWarningScreen(this);
             this.client.setScreen(screen);
         });
+
         RoundedButton options = new RoundedButton(
                 this.width / 2 - 100, l + 48, 100, 20,
                 Text.literal("Options"),
                 new Color(255, 255, 255),
                 () -> this.client.setScreen(new OptionsScreen(this, this.client.options))
         );
+
         RoundedButton quit = new RoundedButton(
                 this.width / 2, l + 48, 100, 20,
                 Text.literal("Quit Game"),
                 new Color(255, 255, 255),
                 () -> this.client.scheduleStop()
-                );
+        );
 
+
+        clearChildren();
+        blur();
 
         this.addDrawableChild(singleplayer);
         this.addDrawableChild(multiplayer);
@@ -57,12 +63,5 @@ public abstract class TitleScreenMixin extends Screen {
         this.addDrawableChild(quit);
 
     }
-
-    @Inject(method = "addNormalWidgets", at = @At("HEAD"), cancellable = true)
-    private void removeNormalButtons(int y, int spacingY, CallbackInfoReturnable<Integer> cir) {
-        cir.cancel();
-    }
-
-
 }
 // zanex ich kann nicht mehr
